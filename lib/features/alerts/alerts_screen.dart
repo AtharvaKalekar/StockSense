@@ -22,6 +22,8 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
     final alertsAsync = ref.watch(alertsListProvider);
     final userRole = ref.watch(currentRoleProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
 
     return Scaffold(
       appBar: AppBar(
@@ -41,28 +43,27 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4F46E5),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              onPressed: () {
-                if (!PermissionManager.canReorder(userRole)) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text("⛔ Access Denied: Ordering stock requires Admin or Warehouse Manager role (${userRole.displayName} logged in)."),
-                      backgroundColor: const Color(0xFFBE123C),
+            child: isMobile
+                ? IconButton(
+                    tooltip: "Order All Low Stock",
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFF4F46E5),
+                      foregroundColor: Colors.white,
                     ),
-                  );
-                } else {
-                  _showBatchOrderDialog(context);
-                }
-              },
-              icon: const Icon(Icons.shopping_cart_checkout_rounded, size: 16),
-              label: const Text("Order All Low Stock", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-            ),
+                    icon: const Icon(Icons.shopping_cart_checkout_rounded, size: 20),
+                    onPressed: () => _handleBatchOrderClick(context, userRole),
+                  )
+                : ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4F46E5),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () => _handleBatchOrderClick(context, userRole),
+                    icon: const Icon(Icons.shopping_cart_checkout_rounded, size: 16),
+                    label: const Text("Order All Low Stock", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
           ),
         ],
       ),
@@ -268,58 +269,47 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                                           ),
                                         ),
                                         const SizedBox(height: 12),
+                                        // Location Tag
                                         Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
-                                            Row(
-                                              children: [
-                                                const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF64748B)),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  "Bin: Zone A-0${(alert.skuCode ?? "").hashCode % 4 + 1}-R${(alert.skuCode ?? "").hashCode % 5 + 1}",
-                                                  style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontFamily: "JetBrains Mono"),
-                                                ),
-                                              ],
+                                            const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF64748B)),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              "Bin: Zone A-0${(alert.skuCode ?? "").hashCode % 4 + 1}-R${(alert.skuCode ?? "").hashCode % 5 + 1}",
+                                              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontFamily: "JetBrains Mono"),
                                             ),
-                                            Wrap(
-                                              spacing: 8,
-                                              children: [
-                                                OutlinedButton.icon(
-                                                  style: OutlinedButton.styleFrom(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                                    minimumSize: Size.zero,
-                                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                                    side: const BorderSide(color: Color(0xFF0D9488)),
-                                                  ),
-                                                  onPressed: () => context.go("/inward"),
-                                                  icon: const Icon(Icons.input_rounded, size: 14, color: Color(0xFF0D9488)),
-                                                  label: const Text("GRN Inward", style: TextStyle(fontSize: 11, color: Color(0xFF0D9488), fontWeight: FontWeight.bold)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 10),
+                                        // Action Buttons Bar (Responsive Row/Wrap)
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: OutlinedButton.icon(
+                                                style: OutlinedButton.styleFrom(
+                                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                                  side: const BorderSide(color: Color(0xFF0D9488)),
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                                 ),
-                                                ElevatedButton.icon(
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor: const Color(0xFF4F46E5),
-                                                    foregroundColor: Colors.white,
-                                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                                    minimumSize: Size.zero,
-                                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                                    elevation: 2,
-                                                  ),
-                                                  onPressed: () {
-                                                    if (!PermissionManager.canReorder(userRole)) {
-                                                      ScaffoldMessenger.of(context).showSnackBar(
-                                                        SnackBar(
-                                                          content: Text("⛔ Access Denied: Ordering stock requires Admin or Warehouse Manager role (${userRole.displayName} logged in)."),
-                                                          backgroundColor: const Color(0xFFBE123C),
-                                                        ),
-                                                      );
-                                                    } else {
-                                                      _showOrderStockDialog(context, alert);
-                                                    }
-                                                  },
-                                                  icon: const Icon(Icons.add_shopping_cart_rounded, size: 14),
-                                                  label: const Text("Order Stock", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                                onPressed: () => context.go("/inward"),
+                                                icon: const Icon(Icons.input_rounded, size: 14, color: Color(0xFF0D9488)),
+                                                label: const Text("GRN Inward", style: TextStyle(fontSize: 11, color: Color(0xFF0D9488), fontWeight: FontWeight.bold)),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: ElevatedButton.icon(
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: const Color(0xFF4F46E5),
+                                                  foregroundColor: Colors.white,
+                                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                                  elevation: 2,
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                                 ),
-                                              ],
+                                                onPressed: () => _handleOrderStockClick(context, alert, userRole),
+                                                icon: const Icon(Icons.add_shopping_cart_rounded, size: 14),
+                                                label: const Text("Order Stock", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                              ),
                                             ),
                                           ],
                                         ),
@@ -340,6 +330,32 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
         },
       ),
     );
+  }
+
+  void _handleBatchOrderClick(BuildContext context, UserRole userRole) {
+    if (!PermissionManager.canReorder(userRole)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("⛔ Access Denied: Ordering stock requires Admin or Warehouse Manager role (${userRole.displayName} logged in)."),
+          backgroundColor: const Color(0xFFBE123C),
+        ),
+      );
+    } else {
+      _showBatchOrderDialog(context);
+    }
+  }
+
+  void _handleOrderStockClick(BuildContext context, AlertModel alert, UserRole userRole) {
+    if (!PermissionManager.canReorder(userRole)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("⛔ Access Denied: Ordering stock requires Admin or Warehouse Manager role (${userRole.displayName} logged in)."),
+          backgroundColor: const Color(0xFFBE123C),
+        ),
+      );
+    } else {
+      _showOrderStockDialog(context, alert);
+    }
   }
 
   Widget _filterChip(String key, String label) {
@@ -403,6 +419,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
@@ -523,6 +540,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
